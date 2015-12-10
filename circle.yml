@@ -1,7 +1,9 @@
 dependencies:
   pre:
     - go version
+    - go get github.com/mitchellh/gox
+
   post:
     - go install ./...
-    - gox -arch=amd64 -os="linux darwin" -output="${CIRCLE_ARTIFACTS}/{{.Dir}}-$(<VERSION)-{{.OS}}-{{.Arch}}" -ldflags="-X main.Version=$(<VERSION)"
+    - gox -arch=amd64 -os="linux darwin" -output="${CIRCLE_ARTIFACTS}/{{.OS}}-{{.Arch}}"
 
