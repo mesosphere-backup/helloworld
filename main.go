@@ -12,6 +12,7 @@ var listener string
 
 func init() {
   flag.StringVar(&listener, "listener", ":1234", "Listener address")
+  flag.Parse()
 }
 
 // hello world, the web server
