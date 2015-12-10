@@ -1,0 +1,7 @@
+dependencies:
+  pre:
+    - go version
+  post:
+    - go install ./...
+    - gox -arch=amd64 -os="linux darwin" -output="${CIRCLE_ARTIFACTS}/{{.Dir}}-$(<VERSION)-{{.OS}}-{{.Arch}}" -ldflags="-X main.Version=$(<VERSION)"
+
