@@ -5,9 +5,14 @@ import (
   "fmt"
   "os"
   "io"
+  "net"
   "net/http"
   "time"
 )
+
+var healthy bool
+
+var ln net.Listener
 
 var listener string
 var sayString string
@@ -17,11 +22,25 @@ func init() {
   flag.Parse()
 }
 
+func HealthyServer(w http.ResponseWriter, req *http.Request) {
+  if !healthy {
+    w.WriteHeader(http.StatusInternalServerError)
+  }
+  newvalue := req.PostFormValue("healthy")
+  if newvalue == "false" {
+    healthy = false
+  } else if newvalue == "true" {
+    healthy = true
+  }
+  ret := fmt.Sprintf("Healthy: %v", healthy)
+  io.WriteString(w, ret)
+}
+
 // hello world, the web server
 func HelloServer(w http.ResponseWriter, req *http.Request) {
   hostname, _ := os.Hostname()
   pid := os.Getpid()
-  ret := fmt.Sprintf("Hello world (%d) app running at: %s, on hostname: %s, and say string `%s`\n", pid, listener, hostname, sayString)
+  ret := fmt.Sprintf("Hello world (%d) app running at: %s, on hostname: %s, and say string `%s` healthy: %v\n", pid, listener, hostname, sayString, healthy)
   io.WriteString(w, ret)
 }
 
@@ -45,9 +64,25 @@ func StreamingServer(w http.ResponseWriter, req *http.Request) {
   }
 }
 
+func DenyConnections(w http.ResponseWriter, req *http.Request) {
+  ln.Close()
+  ret := fmt.Sprintf("Denying future connections")
+  io.WriteString(w, ret)
+}
+
 func main() {
+  healthy = true
+  var err error
   fmt.Println("Hello world server starting up")
+  ln, err = net.Listen("tcp", listener)
+  if err != nil {
+    fmt.Println("Error, could not start listener", err)
+    os.Exit(1)
+  }
   http.HandleFunc("/", HelloServer)
   http.HandleFunc("/stream", StreamingServer)
-  http.ListenAndServe(listener, nil)
+  http.HandleFunc("/deny", DenyConnections)
+  http.HandleFunc("/healthy", HealthyServer)
+  http.Serve(ln, nil)
+  select{}
 }
